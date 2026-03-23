@@ -6,7 +6,7 @@ import ProgressBar from '../components/ProgressBar'
 import SegmentedControl from '../components/SegmentedControl'
 import OrderCard from '../components/OrderCard'
 import OrderCardGrid from '../components/OrderCardGrid'
-import { orders, metrics, progressData } from '../data/mockData'
+import { orders } from '../data/mockData'
 import type { OrderStatus } from '../data/mockData'
 
 const STATUS_ORDER: OrderStatus[] = ['problem', 'assembly', 'new', 'shipped'];
@@ -39,6 +39,12 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = useState(0)
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all')
 
+  const newCount = useMemo(() => orders.filter(o => o.status === 'new').length, []);
+  const assemblyCount = useMemo(() => orders.filter(o => o.status === 'assembly').length, []);
+  const problemCount = useMemo(() => orders.filter(o => o.status === 'problem').length, []);
+  const shippedCount = useMemo(() => orders.filter(o => o.status === 'shipped').length, []);
+  const urgentProblemCount = useMemo(() => orders.filter(o => o.status === 'problem' && o.urgent === 'urgent').length, []);
+
   const sortedOrders = useMemo(() => {
     return [...orders].sort((a, b) => {
       const ai = STATUS_ORDER.indexOf(a.status);
@@ -55,33 +61,31 @@ export default function Dashboard() {
     return sortedOrders.filter((o) => o.status === statusFilter);
   }, [sortedOrders, statusFilter]);
 
-  const problemCount = orders.filter((o) => o.status === 'problem' && o.urgent === 'urgent').length;
-
   return (
     <div style={{ paddingBottom: 90 }}>
       <Header />
-      <StatusBanner count={problemCount} />
+      <StatusBanner count={urgentProblemCount} />
 
       {/* Metrics */}
       <div className="flex gap-3" style={{ padding: '16px 20px 0' }}>
         <MetricCard
           icon="🆕"
           label="Новые"
-          value={metrics.newOrders}
+          value={newCount}
           badgeText="за сегодня"
           badgeColor="blue"
         />
         <MetricCard
           icon="📦"
           label="Сборка"
-          value={metrics.assembly}
+          value={assemblyCount}
           badgeText="ожидают"
           badgeColor="amber"
         />
         <MetricCard
           icon="⚠️"
           label="Проблемные"
-          value={metrics.problems}
+          value={problemCount}
           badgeText="срочно!"
           badgeColor="red"
           showPulse
@@ -94,10 +98,10 @@ export default function Dashboard() {
           Статус заказов сегодня
         </h2>
         <ProgressBar
-          shipped={progressData.shipped}
-          processing={progressData.processing}
-          assembly={progressData.assembly}
-          problems={progressData.problems}
+          shipped={shippedCount}
+          processing={newCount}
+          assembly={assemblyCount}
+          problems={problemCount}
         />
       </div>
 

@@ -5,6 +5,7 @@ import StatusBadge from '../components/StatusBadge'
 import Toast from '../components/Toast'
 import { orders, problemTypeOptions } from '../data/mockData'
 import { STATUS_CONFIG, PROBLEM_TYPE_LABELS } from '../data/statusConfig'
+import { formatRub, formatItemsCount } from '../utils/format'
 
 const TOAST_MESSAGES: Record<string, string> = {
   problem: '✓ Решение зафиксировано',
@@ -35,6 +36,13 @@ const ACTION_CONFIG: Record<string, {
   },
 };
 
+const ASSEMBLY_CHECKLIST = [
+  'Проверить комплектацию по накладной',
+  'Упаковать в фирменный пакет',
+  'Прикрепить накладную и стикер с адресом',
+  'Взвесить и записать вес посылки',
+];
+
 export default function OrderDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -47,7 +55,7 @@ export default function OrderDetail() {
   )
   const [comment, setComment] = useState('')
   const [showToast, setShowToast] = useState(false)
-  const [checklist, setChecklist] = useState([false, false, false])
+  const [checklist, setChecklist] = useState(ASSEMBLY_CHECKLIST.map(() => false))
 
   const handleAction = () => {
     setShowToast(true)
@@ -144,7 +152,7 @@ export default function OrderDetail() {
           )
         ) : (
           <span style={{ fontSize: 12, color: config.textColor, fontWeight: 500 }}>
-            {order.items}
+            {formatItemsCount(order.items)}
           </span>
         )}
       </div>
@@ -170,12 +178,68 @@ export default function OrderDetail() {
                 color: order.status === 'problem' ? 'var(--color-urgent)' : 'var(--color-text-primary)',
               }}
             >
-              ${order.amount.toFixed(2)}
+              {formatRub(order.amount)}
             </div>
           </div>
           <div>
             <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginBottom: 2 }}>Статус</div>
             <StatusBadge status={order.status} />
+          </div>
+        </div>
+      </div>
+
+      {/* Order Items */}
+      <div style={cardStyle}>
+        <div style={sectionTitle}>Состав заказа</div>
+        <div>
+          {order.items.map((item, i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between gap-3"
+              style={{
+                padding: '10px 0',
+                borderBottom: i < order.items.length - 1 ? '1px solid var(--color-border-light)' : 'none',
+              }}
+            >
+              <span
+                className="font-inter"
+                style={{
+                  fontSize: 14,
+                  color: 'var(--color-text-primary)',
+                  flex: 1,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {item.name}
+              </span>
+              <span
+                className="font-inter"
+                style={{
+                  fontSize: 13,
+                  color: 'var(--color-text-secondary)',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                {item.qty} × {formatRub(item.price)}
+              </span>
+            </div>
+          ))}
+          <div
+            className="flex items-center justify-between"
+            style={{
+              marginTop: 4,
+              background: 'var(--color-bg)',
+              borderRadius: 'var(--radius-sm)',
+              padding: '10px 8px',
+              marginLeft: -8,
+              marginRight: -8,
+            }}
+          >
+            <span className="font-dm" style={{ fontSize: 14, fontWeight: 600 }}>Итого</span>
+            <span className="font-dm" style={{ fontSize: 14, fontWeight: 600 }}>{formatRub(order.amount)}</span>
           </div>
         </div>
       </div>
@@ -214,10 +278,9 @@ export default function OrderDetail() {
         </div>
       </div>
 
-      {/* Status-specific content */}
+      {/* Problem-specific sections */}
       {order.status === 'problem' && (
         <>
-          {/* Problem Type */}
           <div style={cardStyle}>
             <div style={sectionTitle}>Тип проблемы</div>
             <div style={{ position: 'relative' }}>
@@ -242,7 +305,6 @@ export default function OrderDetail() {
             </div>
           </div>
 
-          {/* Comment */}
           <div style={cardStyle}>
             <div style={{ marginBottom: 10 }}>
               <span style={{ fontSize: 12, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 500 }}>
@@ -273,26 +335,12 @@ export default function OrderDetail() {
         </>
       )}
 
-      {order.status === 'new' && (
-        <div style={cardStyle}>
-          <div style={sectionTitle}>Детали заказа</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <InfoRow label="Товаров" value={order.items} />
-            <InfoRow label="Адрес" value={order.address} />
-            <InfoRow label="Телефон" value={order.customerPhone} />
-          </div>
-        </div>
-      )}
-
+      {/* Assembly checklist */}
       {order.status === 'assembly' && (
         <div style={cardStyle}>
           <div style={sectionTitle}>Сборка</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
-            <InfoRow label="Товаров к сборке" value={order.items} />
-            <InfoRow label="Адрес доставки" value={order.address} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {['Проверить комплектацию', 'Упаковать товар', 'Прикрепить накладную'].map((item, i) => (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {ASSEMBLY_CHECKLIST.map((item, i) => (
               <label key={i} className="flex items-center gap-3" style={{ cursor: 'pointer' }}>
                 <input
                   type="checkbox"
@@ -304,10 +352,17 @@ export default function OrderDetail() {
                   }}
                   style={{
                     width: 18, height: 18, borderRadius: 4,
-                    accentColor: '#D97706', cursor: 'pointer',
+                    accentColor: '#111', cursor: 'pointer', flexShrink: 0,
                   }}
                 />
-                <span className="font-inter" style={{ fontSize: 14, color: checklist[i] ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)', textDecoration: checklist[i] ? 'line-through' : 'none' }}>
+                <span
+                  className="font-inter"
+                  style={{
+                    fontSize: 14,
+                    color: checklist[i] ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)',
+                    textDecoration: checklist[i] ? 'line-through' : 'none',
+                  }}
+                >
                   {item}
                 </span>
               </label>
@@ -316,17 +371,17 @@ export default function OrderDetail() {
         </div>
       )}
 
-      {order.status === 'shipped' && (
-        <div style={cardStyle}>
-          <div style={sectionTitle}>Доставка</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <InfoRow label="Товаров" value={order.items} />
-            <InfoRow label="Адрес" value={order.address} />
-            <InfoRow label="Трек-номер" value="RU123456789" mono />
-            <InfoRow label="Ожидаемая доставка" value="25 марта" />
-          </div>
+      {/* Delivery Card — all statuses */}
+      <div style={cardStyle}>
+        <div style={sectionTitle}>Доставка</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <InfoRow label="Служба" value={order.deliveryService} />
+          <InfoRow label="Адрес" value={order.address} />
+          <InfoRow label="Трек" value={order.trackNumber || '—'} mono={!!order.trackNumber} />
+          <InfoRow label="Ожидается" value={order.estimatedDelivery || '—'} />
+          <InfoRow label="Оплата" value={order.paymentMethod} />
         </div>
-      )}
+      </div>
 
       {/* Timeline */}
       <div style={cardStyle}>

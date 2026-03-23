@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import type { Order } from '../data/mockData'
 import { STATUS_CONFIG, PROBLEM_TYPE_LABELS } from '../data/statusConfig'
+import { formatRub } from '../utils/format'
 
 interface OrderCardGridProps {
   order: Order;
@@ -91,7 +92,7 @@ export default function OrderCardGrid({ order }: OrderCardGridProps) {
             opacity: order.status === 'shipped' ? 0.75 : 1,
           }}
         >
-          ${order.amount.toFixed(2)}
+          {formatRub(order.amount)}
         </span>
       </div>
     </div>

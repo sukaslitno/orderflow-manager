@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import type { Order } from '../data/mockData'
 import { STATUS_CONFIG, PROBLEM_TYPE_LABELS } from '../data/statusConfig'
 import StatusBadge from './StatusBadge'
+import { formatRub, formatItemsCount } from '../utils/format'
 
 interface OrderCardProps {
   order: Order;
@@ -24,7 +25,7 @@ export default function OrderCard({ order, showStatusBadge = true }: OrderCardPr
 
   const subLabel = isProblem && order.problemType
     ? PROBLEM_TYPE_LABELS[order.problemType]
-    : order.items;
+    : formatItemsCount(order.items);
 
   return (
     <div
@@ -75,7 +76,7 @@ export default function OrderCard({ order, showStatusBadge = true }: OrderCardPr
               opacity: isShipped ? 0.75 : 1,
             }}
           >
-            ${order.amount.toFixed(2)}
+            {formatRub(order.amount)}
           </span>
         </div>
 
