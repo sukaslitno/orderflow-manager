@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Header from '../components/Header'
 import StatusBanner from '../components/StatusBanner'
 import MetricCard from '../components/MetricCard'
@@ -6,15 +6,61 @@ import ProgressBar from '../components/ProgressBar'
 import SegmentedControl from '../components/SegmentedControl'
 import OrderCard from '../components/OrderCard'
 import OrderCardGrid from '../components/OrderCardGrid'
-import { problemOrders, metrics, progressData } from '../data/mockData'
+import { orders, metrics, progressData } from '../data/mockData'
+import type { OrderStatus } from '../data/mockData'
+
+const STATUS_ORDER: OrderStatus[] = ['problem', 'assembly', 'new', 'shipped'];
+
+const FILTER_OPTIONS: { key: OrderStatus | 'all'; label: string }[] = [
+  { key: 'all', label: 'Все' },
+  { key: 'new', label: 'Новые' },
+  { key: 'assembly', label: 'Сборка' },
+  { key: 'problem', label: 'Проблемные' },
+  { key: 'shipped', label: 'Отправлены' },
+];
+
+const SECTION_TITLES: Record<OrderStatus | 'all', string> = {
+  all: 'Все заказы',
+  new: 'Новые заказы',
+  assembly: 'Заказы в сборке',
+  problem: 'Проблемные заказы',
+  shipped: 'Отправленные заказы',
+};
+
+const STATUS_EMPTY_ICONS: Record<OrderStatus | 'all', string> = {
+  all: '📋',
+  new: '🆕',
+  assembly: '📦',
+  problem: '⚠️',
+  shipped: '✅',
+};
 
 export default function Dashboard() {
   const [viewMode, setViewMode] = useState(0)
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all')
+
+  const sortedOrders = useMemo(() => {
+    return [...orders].sort((a, b) => {
+      const ai = STATUS_ORDER.indexOf(a.status);
+      const bi = STATUS_ORDER.indexOf(b.status);
+      if (ai !== bi) return ai - bi;
+      if (a.urgent === 'urgent' && b.urgent !== 'urgent') return -1;
+      if (a.urgent !== 'urgent' && b.urgent === 'urgent') return 1;
+      return 0;
+    });
+  }, []);
+
+  const filteredOrders = useMemo(() => {
+    if (statusFilter === 'all') return sortedOrders;
+    return sortedOrders.filter((o) => o.status === statusFilter);
+  }, [sortedOrders, statusFilter]);
+
+  const problemCount = orders.filter((o) => o.status === 'problem' && o.urgent === 'urgent').length;
 
   return (
     <div style={{ paddingBottom: 90 }}>
       <Header />
-      <StatusBanner count={metrics.problems} />
+      <StatusBanner count={problemCount} />
 
       {/* Metrics */}
       <div className="flex gap-3" style={{ padding: '16px 20px 0' }}>
@@ -64,30 +110,104 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Problem Orders */}
-      <div style={{ padding: '16px 20px 0' }}>
-        <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
-          <h2 className="font-dm" style={{ fontSize: 16, fontWeight: 600 }}>
-            Проблемные заказы
-          </h2>
+      {/* Filter pills */}
+      <div
+        style={{
+          padding: '16px 20px 0',
+          overflowX: 'auto',
+          whiteSpace: 'nowrap',
+          display: 'flex',
+          gap: 8,
+          msOverflowStyle: 'none',
+          scrollbarWidth: 'none',
+        }}
+      >
+        {FILTER_OPTIONS.map((opt) => (
           <button
+            key={opt.key}
+            onClick={() => setStatusFilter(opt.key)}
             style={{
+              padding: '6px 14px',
+              borderRadius: 20,
               fontSize: 13,
               fontWeight: 500,
-              color: 'var(--color-accent-blue)',
-              background: 'none',
+              fontFamily: "'Inter', sans-serif",
               border: 'none',
               cursor: 'pointer',
+              flexShrink: 0,
+              transition: 'all 150ms ease',
+              background: statusFilter === opt.key ? '#111' : 'var(--color-border-light)',
+              color: statusFilter === opt.key ? '#fff' : 'var(--color-text-secondary)',
             }}
           >
-            Все →
+            {opt.label}
           </button>
+        ))}
+      </div>
+
+      {/* Orders */}
+      <div style={{ padding: '16px 20px 0' }}>
+        <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
+          <div className="flex items-center gap-2">
+            <h2 className="font-dm" style={{ fontSize: 16, fontWeight: 600 }}>
+              {SECTION_TITLES[statusFilter]}
+            </h2>
+            <span
+              style={{
+                background: '#F0EFF0',
+                color: '#6B6B6B',
+                borderRadius: 10,
+                padding: '2px 8px',
+                fontSize: 12,
+                fontWeight: 500,
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              {filteredOrders.length}
+            </span>
+          </div>
+          {statusFilter === 'problem' && (
+            <button
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: 'var(--color-accent-blue)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              Все →
+            </button>
+          )}
         </div>
 
-        {viewMode === 0 ? (
+        {filteredOrders.length === 0 ? (
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '40px 20px',
+              color: 'var(--color-text-tertiary)',
+            }}
+          >
+            <div style={{ fontSize: 40, marginBottom: 12 }}>
+              {STATUS_EMPTY_ICONS[statusFilter]}
+            </div>
+            <div className="font-dm" style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>
+              Нет заказов
+            </div>
+            <div style={{ fontSize: 13 }}>
+              {SECTION_TITLES[statusFilter]} не найдено
+            </div>
+          </div>
+        ) : viewMode === 0 ? (
           <div className="animate-fade-in">
-            {problemOrders.map((order) => (
-              <OrderCard key={order.id} order={order} />
+            {filteredOrders.map((order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                showStatusBadge={statusFilter === 'all'}
+              />
             ))}
           </div>
         ) : (
@@ -99,7 +219,7 @@ export default function Dashboard() {
               gap: 12,
             }}
           >
-            {problemOrders.map((order) => (
+            {filteredOrders.map((order) => (
               <OrderCardGrid key={order.id} order={order} />
             ))}
           </div>
@@ -142,6 +262,7 @@ export default function Dashboard() {
         </button>
         <button
           className="active-scale"
+          onClick={() => setStatusFilter('problem')}
           style={{
             flex: 1,
             padding: '12px 16px',

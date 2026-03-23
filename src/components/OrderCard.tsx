@@ -1,12 +1,30 @@
 import { useNavigate } from 'react-router-dom'
 import type { Order } from '../data/mockData'
+import { STATUS_CONFIG, PROBLEM_TYPE_LABELS } from '../data/statusConfig'
+import StatusBadge from './StatusBadge'
 
 interface OrderCardProps {
   order: Order;
+  showStatusBadge?: boolean;
 }
 
-export default function OrderCard({ order }: OrderCardProps) {
+const ACTION_LABELS: Record<Order['status'], { label: string; color: string; border: string }> = {
+  problem: { label: 'Решить →', color: 'var(--color-accent-blue)', border: 'var(--color-accent-blue)' },
+  new: { label: 'Взять в работу →', color: 'var(--color-accent-blue)', border: 'var(--color-accent-blue)' },
+  assembly: { label: 'Детали →', color: 'var(--color-text-secondary)', border: 'var(--color-border)' },
+  shipped: { label: 'Просмотр →', color: 'var(--color-text-secondary)', border: 'var(--color-border)' },
+};
+
+export default function OrderCard({ order, showStatusBadge = true }: OrderCardProps) {
   const navigate = useNavigate()
+  const config = STATUS_CONFIG[order.status]
+  const action = ACTION_LABELS[order.status]
+  const isShipped = order.status === 'shipped'
+  const isProblem = order.status === 'problem'
+
+  const subLabel = isProblem && order.problemType
+    ? PROBLEM_TYPE_LABELS[order.problemType]
+    : order.items;
 
   return (
     <div
@@ -23,10 +41,8 @@ export default function OrderCard({ order }: OrderCardProps) {
         transition: 'transform 100ms ease',
       }}
     >
-      {/* Left accent bar */}
-      <div style={{ width: 4, background: 'var(--color-urgent)', flexShrink: 0 }} />
+      <div style={{ width: 4, background: config.accentColor, flexShrink: 0 }} />
 
-      {/* Content */}
       <div style={{ flex: 1, padding: '12px 14px' }}>
         {/* Top row */}
         <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
@@ -34,7 +50,7 @@ export default function OrderCard({ order }: OrderCardProps) {
             <span className="font-dm" style={{ fontSize: 14, fontWeight: 600 }}>
               #{order.id}
             </span>
-            {order.urgent && (
+            {order.urgent === 'urgent' && (
               <span
                 style={{
                   fontSize: 10,
@@ -50,8 +66,16 @@ export default function OrderCard({ order }: OrderCardProps) {
               </span>
             )}
           </div>
-          <span className="font-dm" style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-urgent)' }}>
-            ${Math.abs(order.amount).toFixed(2)}
+          <span
+            className="font-dm"
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: isProblem ? 'var(--color-urgent)' : 'var(--color-text-primary)',
+              opacity: isShipped ? 0.75 : 1,
+            }}
+          >
+            ${order.amount.toFixed(2)}
           </span>
         </div>
 
@@ -61,27 +85,14 @@ export default function OrderCard({ order }: OrderCardProps) {
             {order.customer} · {order.time}
           </span>
           <span className="font-inter" style={{ fontSize: 12, color: 'var(--color-text-tertiary)' }}>
-            {order.problem}
+            {subLabel}
           </span>
         </div>
 
         {/* Bottom row */}
         <div className="flex items-center justify-between">
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              fontSize: 11,
-              fontWeight: 500,
-              padding: '3px 8px',
-              borderRadius: 20,
-              background: 'var(--color-status-problem)',
-              color: 'var(--color-status-problem-text)',
-            }}
-          >
-            ⚠️ Проблемный
-          </span>
+          {showStatusBadge && <StatusBadge status={order.status} />}
+          {!showStatusBadge && <div />}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -92,13 +103,13 @@ export default function OrderCard({ order }: OrderCardProps) {
               fontWeight: 600,
               padding: '4px 12px',
               borderRadius: 20,
-              border: '1px solid var(--color-accent-blue)',
-              color: 'var(--color-accent-blue)',
+              border: `1px solid ${action.border}`,
+              color: action.color,
               background: 'transparent',
               cursor: 'pointer',
             }}
           >
-            Решить →
+            {action.label}
           </button>
         </div>
       </div>

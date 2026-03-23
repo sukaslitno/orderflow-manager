@@ -19,6 +19,8 @@
   --color-status-problem-text: #B91C1C;
   --color-status-ok: #DCFCE7;
   --color-status-ok-text: #166534;
+  --color-status-shipped: #DCFCE7;
+  --color-status-shipped-text: #166534;
   --color-urgent: #EF4444;
   --color-urgent-bg: #FEE2E2;
   --radius-sm: 8px;

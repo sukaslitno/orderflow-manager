@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import type { Order } from '../data/mockData'
+import { STATUS_CONFIG, PROBLEM_TYPE_LABELS } from '../data/statusConfig'
 
 interface OrderCardGridProps {
   order: Order;
@@ -7,6 +8,12 @@ interface OrderCardGridProps {
 
 export default function OrderCardGrid({ order }: OrderCardGridProps) {
   const navigate = useNavigate()
+  const config = STATUS_CONFIG[order.status]
+  const isProblem = order.status === 'problem'
+
+  const chipLabel = isProblem && order.problemType
+    ? PROBLEM_TYPE_LABELS[order.problemType]
+    : config.label;
 
   return (
     <div
@@ -23,16 +30,15 @@ export default function OrderCardGrid({ order }: OrderCardGridProps) {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        borderTop: order.urgent ? '3px solid var(--color-urgent)' : '3px solid var(--color-status-assembly-text)',
+        borderTop: `3px solid ${config.accentColor}`,
       }}
     >
-      {/* Top */}
       <div>
         <div className="flex items-center justify-between" style={{ marginBottom: 6 }}>
           <span className="font-dm" style={{ fontSize: 13, fontWeight: 600 }}>
             #{order.id}
           </span>
-          {order.urgent && (
+          {order.urgent === 'urgent' && (
             <span
               style={{
                 fontSize: 9,
@@ -63,7 +69,6 @@ export default function OrderCardGrid({ order }: OrderCardGridProps) {
         </div>
       </div>
 
-      {/* Bottom */}
       <div className="flex items-center justify-between">
         <span
           style={{
@@ -71,14 +76,22 @@ export default function OrderCardGrid({ order }: OrderCardGridProps) {
             fontWeight: 500,
             padding: '2px 6px',
             borderRadius: 20,
-            background: 'var(--color-status-problem)',
-            color: 'var(--color-status-problem-text)',
+            background: config.bgColor,
+            color: config.textColor,
           }}
         >
-          {order.problem}
+          {chipLabel}
         </span>
-        <span className="font-dm" style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-urgent)' }}>
-          ${Math.abs(order.amount).toFixed(2)}
+        <span
+          className="font-dm"
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: isProblem ? 'var(--color-urgent)' : 'var(--color-text-primary)',
+            opacity: order.status === 'shipped' ? 0.75 : 1,
+          }}
+        >
+          ${order.amount.toFixed(2)}
         </span>
       </div>
     </div>
